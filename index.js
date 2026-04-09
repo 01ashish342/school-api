@@ -9,7 +9,7 @@ const app=express();
 app.use(bodyParser.json());
 app.use(cors());
 
-const PORT=process.env.PORT || 3000;
+const PORT=process.env.PORT || 8080;
 
 app.post('/addschool', (req,res)=> {
 
