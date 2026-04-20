@@ -11,7 +11,7 @@ app.use(cors());
 
 const PORT=process.env.PORT || 3000;
 
-app.post('/addschool', (req,res)=> {
+app.post('/addschool', async (req,res)=> {
 
     const { name, address, latitude, longitude }=req.body;
 
@@ -28,19 +28,17 @@ app.post('/addschool', (req,res)=> {
 
     const query= "INSERT INTO schools (name,address,latitude,longitude ) VALUES (?,?,?,?)";
 
-    db.query(query, [name, address,latitude, longitude], (err, result) => {
+    try {
+        const [result] = await db.query(query, [name, address, latitude, longitude]);
 
-        if(err){
-            console.error("Error inserting data:", err);
-
-            return res.status(500).json({ error: "Database error"});
-
-        }
-
-        return res.status(201).json({ message: "School added successfully", 
-            schoolId : result.insertId
+        return res.status(201).json({ message: "School added successfully",
+            schoolId: result.insertId
         });
-    });
+    } catch(err) {
+        console.error("Error inserting data:", err);
+
+        return res.status(500).json({ error: "Database error"});
+    }
 });
 
 
@@ -71,7 +69,7 @@ function getDistance(lat1, lon1, lat2, lon2) {
 
 
 
-app.get('/listSchools', (req,res)=> {
+app.get('/listSchools', async (req,res)=> {
 
     const { latitude, longitude } =req.query;
 
@@ -80,17 +78,13 @@ app.get('/listSchools', (req,res)=> {
 
     }
 
-    db.query("SELECT* FROM schools", (err,result) => {
-
-        if(err){
-           return res.status(500).json({ error: "Database error"});
-
-        }
+    try {
+        const [rows] = await db.query("SELECT * FROM schools");
 
         const userlat=parseFloat(latitude);
         const userlon=parseFloat(longitude);
 
-        const sortedschools=result.map( (school)=> {
+        const sortedschools=rows.map( (school)=> {
 
              const distance = getDistance(
           userlat,
@@ -104,7 +98,11 @@ app.get('/listSchools', (req,res)=> {
         .sort((a,b)=> a.distance - b.distance);
 
         res.json(sortedschools);
-    });
+    } catch(err) {
+        console.error("Error fetching schools:", err);
+
+        return res.status(500).json({ error: "Database error"});
+    }
 
 });
 
